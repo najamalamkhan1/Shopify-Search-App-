@@ -1,0 +1,521 @@
+﻿{%- liquid
+assign results_count = search.results_count
+assign search_terms = search.terms
+
+assign cur_sort = search.sort_by
+if cur_sort == blank or cur_sort == 'relevance' or cur_sort == 'manual' or cur_sort == 'best-selling'
+assign cur_sort = 'created-descending'
+endif
+-%}
+
+<style>
+.tbp-sidebar{ position:fixed; top:0; left:0; height:100%; transform:translateX(-100%); }
+.tbp-backdrop{ position:fixed; inset:0; opacity:0; visibility:hidden; }
+.tbp-preload .tbp-sidebar,
+.tbp-preload .tbp-backdrop{ transition:none !important; }
+</style>
+
+<div class="tbp-search-page tbp-preload">
+<div class="tbp-toolbar">
+<div class="tbp-toolbar-left">
+<button class="tbp-filter-btn" type="button">
+<svg width="64px" height="64px" viewBox="0 -0.5 25 25" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M6.5 11.75C6.08579 11.75 5.75 12.0858 5.75 12.5C5.75 12.9142 6.08579 13.25 6.5 13.25V11.75ZM18.5 13.25C18.9142 13.25 19.25 12.9142 19.25 12.5C19.25 12.0858 18.9142 11.75 18.5 11.75V13.25ZM6.5 15.75C6.08579 15.75 5.75 16.0858 5.75 16.5C5.75 16.9142 6.08579 17.25 6.5 17.25V15.75ZM18.5 17.25C18.9142 17.25 19.25 16.9142 19.25 16.5C19.25 16.0858 18.9142 15.75 18.5 15.75V17.25ZM6.5 7.75C6.08579 7.75 5.75 8.08579 5.75 8.5C5.75 8.91421 6.08579 9.25 6.5 9.25V7.75ZM18.5 9.25C18.9142 9.25 19.25 8.91421 19.25 8.5C19.25 8.08579 18.9142 7.75 18.5 7.75V9.25ZM6.5 13.25H18.5V11.75H6.5V13.25ZM6.5 17.25H18.5V15.75H6.5V17.25ZM6.5 9.25H18.5V7.75H6.5V9.25Z" fill="#000000"></path> </g></svg>
+<span>Filter</span>
+</button>
+{%comment%} <span class="tbp-count">{{ results_count }} Results</span>{%endcomment%}
+</div>
+
+<div class="tbp-toolbar-right">
+<form method="get">
+<input type="hidden" name="q" value="{{ search_terms }}">
+
+<select name="sort_by" onchange="this.form.submit()" class="tbp-sort">
+<option
+value="created-descending"
+{% if cur_sort == 'created-descending' %}
+selected
+{% endif %}
+>
+Date, new to old
+</option>
+<option
+value="price-ascending"
+{% if cur_sort == 'price-ascending' %}
+selected
+{% endif %}
+>
+Price, low to high
+</option>
+<option
+value="price-descending"
+{% if cur_sort == 'price-descending' %}
+selected
+{% endif %}
+>
+Price, high to low
+</option>
+</select>
+</form>
+</div>
+</div>
+
+<div class="tbp-search-layout">
+<div class="tbp-backdrop" id="tbp-backdrop"></div>
+
+<aside class="tbp-sidebar" id="tbp-sidebar">
+<div class="tbp-sidebar-head">
+<span class="tbp-sidebar-title">Filters</span>
+<button type="button" class="tbp-close-btn" id="tbp-close-filters" aria-label="Close filters">&times;</button>
+</div>
+
+<div class="tbp-sidebar-scroll">
+<form method="get" id="tbp-filters-form" class="tbp-filters-form" data-native-filters="true">
+<input type="hidden" name="q" value="{{ search.terms }}">
+<input type="hidden" name="sort_by" value="{{ cur_sort }}">
+{%- if search.filters.size > 0 -%}
+{%- assign active_filter_count = 0 -%}
+{%- for filter in search.filters -%}
+{%- assign active_filter_count = active_filter_count | plus: filter.active_values.size -%}
+{%- if filter.type == 'price_range' -%}
+{%- if filter.min_value.value != blank or filter.max_value.value != blank -%}
+{%- assign active_filter_count = active_filter_count | plus: 1 -%}
+{%- endif -%}
+{%- endif -%}
+{%- endfor -%}
+{%- if active_filter_count > 0 -%}
+<div class="tbp-clear-row"><a class="tbp-clear-all" href="{{ routes.search_url }}?q={{ search.terms | url_encode }}&sort_by={{ cur_sort | url_encode }}">Clear all ({{ active_filter_count }})</a></div>
+{%- endif -%}
+
+{%- for filter in search.filters -%}
+<details class="tbp-filter-group" open>
+<summary class="tbp-filter-title">
+<span>{{ filter.label | escape }}</span>
+{%- if filter.active_values.size > 0 -%}<span class="tbp-active-dot">{{ filter.active_values.size }}</span>{%- endif -%}
+</summary>
+<div class="tbp-filter-body">
+{%- case filter.type -%}
+{%- when 'price_range' -%}
+<div class="tbp-price">
+<input
+class="tbp-price-input"
+type="number"
+inputmode="decimal"
+name="{{ filter.min_value.param_name }}"
+placeholder="Min"
+min="0"
+{% if filter.min_value.value != blank %}value="{{ filter.min_value.value | money_without_currency | replace: ',', '' }}"{% endif %}
+>
+<span class="tbp-price-sep">-</span>
+<input
+class="tbp-price-input"
+type="number"
+inputmode="decimal"
+name="{{ filter.max_value.param_name }}"
+placeholder="Max"
+min="0"
+{% if filter.max_value.value != blank %}value="{{ filter.max_value.value | money_without_currency | replace: ',', '' }}"{% endif %}
+>
+</div>
+{%- else -%}
+<ul class="tbp-filter-list">
+{%- for value in filter.values -%}
+<li>
+<label class="tbp-filter-item{% if value.count == 0 and value.active == false %} is-disabled{% endif %}">
+<input
+type="checkbox"
+name="{{ value.param_name }}"
+value="{{ value.value }}"
+{% if value.active %}checked{% endif %}
+{% if value.count == 0 and value.active == false %}disabled{% endif %}
+>
+<span class="tbp-checkmark"></span>
+<span class="tbp-filter-label">{{ value.label | escape }}</span>
+</label>
+</li>
+{%- endfor -%}
+</ul>
+{%- endcase -%}
+</div>
+</details>
+{%- endfor -%}
+{%- else -%}
+<div class="tbp-no-filters">No filters found.</div>
+{%- endif -%}
+</form>
+</div>
+</aside>
+
+<main class="tbp-products-wrapper">
+{%- paginate search.results by 20 -%}
+<div class="tbp-products-grid t4s-search-grid">
+{%- comment -%} Render cards, then JS sorts by first published date first and created_at only as fallback. {%- endcomment -%}
+{%- assign products_only = search.results | where: 'object_type', 'product' -%}
+{%- for item in products_only -%}
+{%- if item.object_type == 'product' -%}
+<div
+class="tbp-product-card"
+data-handle="{{ item.handle }}"
+data-first-published="{{ item.published_at | date: '%s' }}"
+data-created="{{ item.created_at | date: '%s' }}"
+data-price="{{ item.price }}"
+>
+<div class="t4s-product-card">
+<div class="t4s-product-media{% if item.images.size > 1 %} has-second{% endif %}">
+<a href="{{ item.url }}" class="t4s-product-image">
+{%- unless item.available -%}
+<span class="tbp-soldout-badge">Sold Out</span>
+{%- endunless -%}
+{%- if item.featured_image -%}
+<img
+class="tbp-img-main"
+src="{{ item.featured_image | image_url: width: 600 }}"
+alt="{{ item.title | escape }}"
+loading="lazy"
+width="{{ item.featured_image.width }}"
+height="{{ item.featured_image.height }}"
+>
+{%- endif -%}
+{%- if item.images.size > 1 -%}
+<img
+class="tbp-img-second"
+src="{{ item.images[1] | image_url: width: 600 }}"
+alt=""
+loading="lazy"
+width="{{ item.images[1].width }}"
+height="{{ item.images[1].height }}"
+>
+{%- endif -%}
+</a>
+
+<div class="tbp-card-actions">
+<button
+type="button"
+class="tbp-action tbp-quick-view"
+data-handle="{{ item.handle }}"
+aria-label="Quick view"
+>
+<svg
+viewBox="0 0 24 24"
+fill="none"
+stroke="currentColor"
+stroke-width="2"
+stroke-linecap="round"
+stroke-linejoin="round"
+>
+<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+</svg>
+<span>View</span>
+</button>
+<button
+type="button"
+class="tbp-action tbp-quick-add tbp-cart-add"
+data-handle="{{ item.handle }}"
+data-variant="{{ item.selected_or_first_available_variant.id }}"
+data-single="true"
+aria-label="Add to cart"
+>
+<svg class="t4s-icon t4s-icon--cart" aria-hidden="true" focusable="false" role="presentation" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 16 16" fill="none"><path d="M5.77778 13.4737C5.51407 13.4737 5.25628 13.5478 5.03702 13.6866C4.81775 13.8254 4.64686 14.0226 4.54594 14.2535C4.44502 14.4843 4.41862 14.7382 4.47006 14.9833C4.52151 15.2283 4.6485 15.4534 4.83497 15.63C5.02144 15.8067 5.25902 15.927 5.51766 15.9757C5.7763 16.0245 6.04439 15.9995 6.28802 15.9038C6.53166 15.8082 6.7399 15.6463 6.8864 15.4386C7.03291 15.2309 7.11111 14.9867 7.11111 14.7368C7.11111 14.4018 6.97064 14.0805 6.72059 13.8437C6.47054 13.6068 6.1314 13.4737 5.77778 13.4737ZM15.1111 10.9474H4.44444C4.2087 10.9474 3.9826 10.8586 3.81591 10.7007C3.64921 10.5428 3.55556 10.3286 3.55556 10.1053C3.55556 9.88192 3.64921 9.66773 3.81591 9.5098C3.9826 9.35188 4.2087 9.26316 4.44444 9.26316H11.9922C12.5712 9.26139 13.1341 9.08189 13.5964 8.75157C14.0587 8.42124 14.3955 7.95788 14.5564 7.43092L15.9657 2.75781C16.0035 2.63248 16.0101 2.50055 15.9849 2.3724C15.9598 2.24425 15.9036 2.12338 15.8207 2.01931C15.7379 1.91524 15.6307 1.83081 15.5075 1.77266C15.3844 1.71451 15.2487 1.68423 15.1111 1.68421H4.21251C4.02849 1.19357 3.68928 0.768598 3.24109 0.467212C2.7929 0.165826 2.25752 0.00267852 1.7079 0H0.888889C0.653141 0 0.427048 0.0887215 0.260349 0.246647C0.0936505 0.404572 0 0.618765 0 0.842105C0 1.06545 0.0936505 1.27964 0.260349 1.43756C0.427048 1.59549 0.653141 1.68421 0.888889 1.68421H1.7079C1.90086 1.68485 2.08842 1.74469 2.24248 1.85476C2.39654 1.96484 2.50881 2.11923 2.5625 2.29482L2.70074 2.75355L2.70095 2.75781L4.15929 7.59334C3.48068 7.6625 2.85589 7.97553 2.41357 8.46798C1.97125 8.96043 1.74508 9.5948 1.78162 10.2405C1.81817 10.8862 2.11465 11.494 2.61001 11.9388C3.10538 12.3836 3.76192 12.6316 4.44444 12.6316H15.1111C15.3469 12.6316 15.573 12.5429 15.7397 12.3849C15.9064 12.227 16 12.0128 16 11.7895C16 11.5661 15.9064 11.3519 15.7397 11.194C15.573 11.0361 15.3469 10.9474 15.1111 10.9474ZM13.9327 3.36842L12.8472 6.96792C12.7936 7.14366 12.6813 7.29819 12.5271 7.40836C12.373 7.51852 12.1853 7.57837 11.9922 7.57895H6.0039L5.77729 6.82761L4.7346 3.36842H13.9327ZM12.8889 13.4737C12.6252 13.4737 12.3674 13.5478 12.1481 13.6866C11.9289 13.8254 11.758 14.0226 11.657 14.2535C11.5561 14.4843 11.5297 14.7382 11.5812 14.9833C11.6326 15.2283 11.7596 15.4534 11.9461 15.63C12.1326 15.8067 12.3701 15.927 12.6288 15.9757C12.8874 16.0245 13.1555 15.9995 13.3991 15.9038C13.6428 15.8082 13.851 15.6463 13.9975 15.4386C14.144 15.2309 14.2222 14.9867 14.2222 14.7368C14.2222 14.4018 14.0817 14.0805 13.8317 13.8437C13.5816 13.6068 13.2425 13.4737 12.8889 13.4737Z" fill="currentColor"></path></svg>
+<span>Add to cart</span>
+</button>
+</div>
+</div>
+
+<div class="t4s-product-info">
+    <div class="t4s-product-vendor">{{ item.vendor }}</div>
+    <a href="{{ item.url }}" class="t4s-product-title">{{ item.title }}</a>
+<div class="t4s-product-price">
+{%- if item.price == 0 -%}
+{%- assign wa_msg = 'Hi, I would like to order: ' | append: item.title | append: ' - ' | append: shop.url | append: item.url -%}
+<a class="tbp-price-whatsapp" href="https://wa.me/{{ section.settings.whatsapp_number }}?text={{ wa_msg | url_encode }}" target="_blank" rel="noopener">
+<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="currentColor"><path d="M19.1 4.9C15.2 1 8.9 1 5 4.9c-3.2 3.2-3.8 8.1-1.6 12L2 22l5.3-1.4c1.5.8 3.1 1.2 4.7 1.2 5.5 0 9.9-4.4 9.9-9.9 0-2.6-1-5.1-2.8-7zM12 20.2c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3.1.8.8-3-.2-.3C2.6 12.4 3.8 7.4 7.7 4.9S16.6 3.7 19 7.5c2.4 3.9 1.3 9-2.6 11.4-1.3.8-2.8 1.3-4.4 1.3zm4.6-6.2c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.6.8-.8 1-.1.2-.3.2-.5.1-.7-.3-1.4-.7-2-1.2-.5-.5-1-1.1-1.4-1.7-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4.1-.1.2-.3.2-.4.1-.1.1-.3 0-.4-.1-.1-.6-1.3-.8-1.8-.1-.4-.3-.4-.5-.4h-.5c-.2 0-.5.2-.6.3-.6.6-.9 1.3-.9 2.1.1.9.4 1.8 1 2.6 1.1 1.6 2.5 2.9 4.2 3.7.5.2.9.4 1.4.5.5.2 1 .2 1.6.1.7-.1 1.3-.6 1.7-1.2.2-.4.2-.8.1-1.2-.1-.3-.3-.4-.5-.5z"/></svg>
+<span>Order Via WhatsApp</span>
+</a>
+{%- else -%}{{ item.price | money }}{%- endif -%}
+</div>
+</div>
+</div>
+</div>
+{%- endif -%}
+{%- endfor -%}
+</div>
+
+{%- if results_count == 0 -%}
+<div class="tbp-empty">
+<h3>No products found</h3>
+<p>Try another search keyword.</p>
+</div>
+{%- endif -%}
+
+<div class="tbp-loadmore-wrap tbp-page-controls">
+<button type="button" class="tbp-loadmore tbp-load-next" id="tbp-loadmore" hidden>
+Load more
+</button>
+</div>
+
+{%- endpaginate -%}
+</main>
+</div>
+
+<div class="tbp-qv-overlay" id="tbp-qv-overlay">
+<div class="tbp-qv-modal" role="dialog" aria-modal="true">
+<button class="tbp-qv-close" id="tbp-qv-close" aria-label="Close"><span class="colseIcon">&times;</span></button>
+<div class="tbp-qv-body" id="tbp-qv-body"></div>
+</div>
+</div>
+</div>
+
+<style>
+.tbp-search-page{ width:calc(100vw - 30px); max-width:none; margin-left:calc(50% - 50vw + 15px); margin-right:calc(50% - 50vw + 15px); padding:50px 0; box-sizing:border-box; }
+
+.tbp-search-heading{ text-align:center; margin-bottom:40px; }
+.tbp-search-heading h1{ font-size:42px; font-weight:400; color:#ab8964; }
+
+.tbp-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:35px; gap:20px; }
+.tbp-toolbar-left{ display:flex; align-items:center; gap:15px; }
+.tbp-filter-btn{ border:1px solid #ddd; background:#fff; padding:10px 18px; cursor:pointer; font-size:14px; display:inline-flex; align-items:center; gap:8px; }
+.tbp-filter-btn svg{ width:18px; height:18px; flex:0 0 18px; }
+.tbp-filter-btn:hover{ border-color:#ab8964; color:#000; }
+.tbp-count{ display:none !important; }
+.tbp-sort{ padding:8px 15px; border:1px solid #eee; background:#fff; min-width:220px; }
+
+.tbp-search-layout{ display:block; position:relative; }
+.tbp-products-wrapper{ min-width:0; position:relative; }
+
+.tbp-products-grid{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; }
+.tbp-product-card{ transition:.25s ease; border-radius:0 !important; }
+.tbp-product-card:hover{ transform:none; }
+.tbp-products-grid.is-loading{ opacity:.35; transform:translateY(8px); pointer-events:none; transition:opacity .22s ease, transform .22s ease; }
+.tbp-products-grid.is-loading-reverse{ transform:translateY(-8px); }
+.tbp-loadmore.is-loading{ opacity:.7; pointer-events:none; }
+
+.tbp-empty{ padding:80px 0; text-align:center; }
+.tbp-empty h3{ font-size:28px; margin-bottom:10px; }
+.tbp-empty p{ color:#777; }
+
+.tbp-pagination{ margin-top:60px; text-align:center; }
+.tbp-pagination .page{ margin:0 5px; }
+
+.t4s-product-media{ position:relative; width:100%; aspect-ratio:3 / 5; overflow:hidden; border-radius:0; background:#f5f5f5; }
+.t4s-product-card{ border-radius:0 !important; padding-bottom: 20px; }
+.t4s-product-image{ position:absolute; inset:0; display:block; cursor:pointer; }
+.t4s-product-image img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.tbp-img-second{ opacity:0; transition:opacity .65s ease; }
+.t4s-product-media.has-second:hover .tbp-img-second{ opacity:1; }
+
+.tbp-soldout-badge{
+position:absolute; top:10px; left:10px; z-index:4;
+background: #999999; color:#fff; font-size:11px; letter-spacing:.04em; text-transform:uppercase;
+padding:5px 10px; border-radius:4px;
+}
+
+.tbp-card-actions{
+position:absolute; top:10px; right:10px; z-index:3;
+display:flex; flex-direction:column; gap:8px; padding:0;
+transform:translateY(-8px); opacity:0; transition:.3s ease;
+}
+.t4s-product-media:hover .tbp-card-actions{ transform:translateY(0); opacity:1; }
+.tbp-action{
+width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center; gap:0;
+background:#fff; border:1px solid #e5e5e5; border-radius:50%; padding:0;
+font-size:12px; line-height:1; cursor:pointer; color:#000; position:relative;
+}
+@keyframes tbpIconBeat{ 0%,100%{ transform:scale(1); } 45%{ transform:scale(1.12); } 75%{ transform:scale(.97); } }
+@keyframes tbpCartSpin{ 0%{ transform:translate(-50%,-50%) rotate(0deg); } 100%{ transform:translate(-50%,-50%) rotate(360deg); } }
+.tbp-action:hover{ background:#000; border-color:#000; color:#fff; }
+.tbp-action:hover svg{ animation:tbpIconBeat 1.35s ease-in-out infinite; }
+.tbp-action svg{ width:17px; height:17px; flex:0 0 auto; }
+.tbp-action svg path{ stroke:currentColor; }
+.tbp-cart-add svg{ width:20px; height:20px; }
+.tbp-cart-add svg path{ fill:currentColor; stroke:none; }
+.tbp-cart-add.is-loading{ background:#000; border-color:#000; color:#fff; pointer-events:none; }
+.tbp-cart-add.is-loading svg{ opacity:0; }
+.tbp-cart-add.is-loading::after{ content:""; position:absolute; top:50%; left:50%; width:16px; height:16px; margin:0; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:tbpCartSpin .75s linear infinite; }
+.tbp-action span{ display:none; }
+.tbp-action[disabled]{ opacity:.5; cursor:not-allowed; }
+.tbp-action[disabled]:hover{ background:#fff; border-color:#e5e5e5; color:#222; }
+.tbp-cart-add[disabled].is-loading,
+.tbp-cart-add[disabled].is-loading:hover{ background:#000; border-color:#000; color:#fff; opacity:1; }
+@media(hover:none){ .tbp-card-actions{ transform:translateY(0); opacity:1; } }
+
+.t4s-product-title{ display:block; margin-top:0; font-size:16px; font-family:"Jost"; color:#5b5b5b; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+.t4s-product-vendor{ line-height:1.2 !important; margin:10px 0 0; font-size:24px; color:#000; font-family:"Inria Serif", serif; }
+.t4s-product-price{ margin-top:0; font-weight:600; line-height:1; color:#222; font-size:18px; }
+.tbp-price-whatsapp{ display:inline-flex; align-items:center; gap:6px; color:#25D366; text-decoration:none; font-weight:600; }
+.tbp-price-whatsapp:hover{ color:#1da851; text-decoration:none; }
+.tbp-price-whatsapp svg{ width:16px; height:16px; flex:0 0 16px; }
+
+.tbp-backdrop{ position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.4); opacity:0; visibility:hidden; transition:.3s; }
+.tbp-backdrop.is-open{ opacity:1; visibility:visible; }
+
+.tbp-sidebar{
+position:fixed; top:0; left:0; z-index:1001;
+width:340px; max-width:88vw; height:100%;
+background:#fff; box-shadow:2px 0 24px rgba(0,0,0,.12);
+display:flex; flex-direction:column;
+transform:translateX(-100%); transition:transform .3s ease;
+}
+.tbp-sidebar.is-open{ transform:translateX(0); }
+
+.tbp-sidebar-head{ display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid #eee; flex:0 0 auto; }
+.tbp-sidebar-title{ font-size:16px; font-weight:600; color:#222; }
+.tbp-close-btn{ background:none; border:0; font-size:26px; line-height:1; cursor:pointer; color:#777; padding:0 4px; }
+.tbp-close-btn:hover{ color:#222; }
+.tbp-sidebar-scroll{ padding:18px 20px; overflow-y:auto; flex:1 1 auto; }
+
+.tbp-clear-row{ display:flex; justify-content:flex-end; margin-bottom:8px; }
+.tbp-clear-all{ font-size:12px; font-weight:500; color:#ab8964; text-decoration:underline; }
+
+.tbp-filter-group{ border-bottom:1px solid #f0f0f0; padding:14px 0; }
+.tbp-filter-group:first-of-type{ padding-top:4px; }
+.tbp-filter-group:last-of-type{ border-bottom:0; }
+.tbp-filter-title{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#222; }
+.tbp-filter-title::-webkit-details-marker{ display:none; }
+.tbp-filter-title::after{ content:"-"; margin-left:auto; color:#999; font-size:16px; }
+.tbp-filter-group:not([open]) .tbp-filter-title::after{ content:"+"; }
+.tbp-active-dot{ background:#ab8964; color:#fff; font-size:11px; border-radius:20px; min-width:18px; height:18px; padding:0 5px; display:inline-flex; align-items:center; justify-content:center; }
+
+.tbp-filter-body{ padding-top:12px; max-height:260px; overflow-y:auto; padding-right:12px; scrollbar-width:thin; scrollbar-color:#ccc transparent; }
+.tbp-filter-body::-webkit-scrollbar{ width:6px; }
+.tbp-filter-body::-webkit-scrollbar-track{ background:transparent; }
+.tbp-filter-body::-webkit-scrollbar-thumb{ background:#ccc; border-radius:3px; }
+.tbp-filter-list{ list-style:none; margin:0; padding:0; }
+.tbp-filter-list li{ margin-bottom:9px; }
+.tbp-filter-item{ display:flex; align-items:center; gap:9px; cursor:pointer; font-size:13px; color:#444; }
+.tbp-filter-item input{ position:absolute; opacity:0; }
+.tbp-checkmark{ width:17px; height:17px; flex:0 0 auto; border:1px solid #ccc; border-radius:4px; position:relative; transition:.15s; }
+.tbp-filter-item input:checked + .tbp-checkmark{ background:#ab8964; border-color:#ab8964; }
+.tbp-filter-item input:checked + .tbp-checkmark::after{ content:""; position:absolute; left:5px; top:2px; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+.tbp-filter-label{ flex:1; }
+.tbp-filter-count{ color:#aaa; font-size:12px; }
+.tbp-filter-item.is-disabled{ opacity:.4; cursor:not-allowed; }
+
+.tbp-price{ display:flex; align-items:center; gap:8px; }
+.tbp-price-input{ flex:1; width:100%; border:1px solid #ddd; border-radius:6px; padding:8px 10px; font-size:13px; outline:0; }
+.tbp-price-sep{ color:#999; }
+
+.tbp-apply-btn{ margin-top:14px; width:100%; padding:11px; border:0; border-radius:6px; background:#ab8964; color:#fff; font-size:14px; cursor:pointer; }
+.tbp-no-filters{ border:1px dashed #ddd; border-radius:10px; padding:18px; font-size:13px; color:#666; line-height:1.6; }
+.tbp-no-filters strong{ display:block; color:#222; margin-bottom:6px; }
+
+.tbp-qv-overlay{ position:fixed; inset:0; z-index:1100; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.45); padding:20px; }
+.tbp-qv-overlay.is-open{ display:flex; }
+.tbp-qv-modal{ position:relative; background:#fff; border-radius:0; width:100%; max-width:400px; max-height:88vh; overflow:visible; box-shadow:0 18px 50px rgba(0,0,0,.16); font-family:"Jost"; }
+.tbp-qv-body{ max-height:88vh; overflow:auto; }
+.tbp-qv-close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    z-index: 2;
+    padding: 0 !important;
+    background: #222;
+    border: 0;
+    border-radius: 0;
+    width: 40px;
+    height: 40px;
+    font-size: 26px;
+    cursor: pointer;
+    color: #b9a37a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+span.colseIcon {
+    line-height: 1;
+    top: -2px;
+    position: relative;
+}
+.tbp-qv-close:hover{ color:#fff; }
+.tbp-qv-grid{ display:block; padding:34px 30px 30px; }
+.tbp-qv-img{ display:none; }
+.tbp-qv-info{ display:flex; flex-direction:column; min-width:0; min-height:0; }
+.tbp-qv-vendor{ font-family:"Inria Serif", serif; font-size:40px; font-weight:700; line-height:1.05; color:#222; margin:0 0 4px; }
+.tbp-qv-title{ font-family:"Jost"; font-size:20px; font-weight:400; line-height:1.35; margin:0 0 4px; color:#888; }
+.tbp-qv-price{ font-size:22px; color:#a99169; margin-bottom:4px; }
+.tbp-qv-variant{ width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; margin-bottom:14px; font-size:14px; background:#fff; }
+.tbp-qv-items{ font-size:16px; line-height:1.3; color:#222; font-weight:700; text-transform:uppercase; margin-bottom:8px; }
+.tbp-qv-options{ display:flex; flex-direction:column; gap:16px; margin-bottom:16px; }
+.tbp-qv-option-title{ font-size:16px; font-weight:700; color:#222; text-transform:uppercase; margin-bottom:14px; }
+.tbp-qv-swatches{ display:flex; flex-wrap:wrap; gap:8px; }
+.tbp-qv-swatch{ min-width:42px; min-height:38px; padding:9px 13px; border:1px solid #9e8a66; border-radius:2px; background:#fff; color:#444; font-size:14px; line-height:1; cursor:pointer; }
+.tbp-qv-swatch:hover{ border-color:#F5F2ED; background:transparent; color:#444; }
+.tbp-qv-swatch.is-selected{ border-color:#9e8a66; background:#F5F2ED; color:#9e8a66; }
+.tbp-qv-swatch.is-disabled{ opacity:.38; cursor:not-allowed; text-decoration:line-through; }
+.tbp-qv-actions{ display:grid; grid-template-columns:120px minmax(0,1fr); gap:10px; margin-top:6px; }
+.tbp-qv-qty{ display:grid; grid-template-columns: 30px 1fr 40px; height:50px; border:1px solid #222; box-sizing:border-box; }
+.tbp-qv-qty button{ border:0; background:#fff; color:#222; font-size:24px; font-weight:600; cursor:pointer; line-height:1; }
+.tbp-qv-qty input{ width:100%; min-width:0; border:0; text-align:center; font-weight:700; font-size:14px; outline:0; box-sizing:border-box; -moz-appearance:textfield; }
+.tbp-qv-qty input::-webkit-outer-spin-button,
+.tbp-qv-qty input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.tbp-qv-add{ width:100%; padding:13px; border:0; border-radius:0; background:#a99169; color:#fff; font-size:14px; font-weight:700; text-transform:uppercase; cursor:pointer; }
+.tbp-qv-add[disabled]{ opacity:.5; cursor:not-allowed; }
+.tbp-qv-buy{ width:100%; display:block; margin-top:14px; padding:14px; border:0; border-radius:0; background:#222; color:#fff; font-size:14px; font-weight:700; text-transform:uppercase; text-align:center; text-decoration:none; cursor:pointer; }
+.tbp-qv-buy[aria-disabled="true"]{ opacity:.55; pointer-events:none; }
+.tbp-qv-wa-link{ display:inline-block; margin-top:10px; font-size:14px; color:#888; text-transform:uppercase; text-decoration:none; }
+.tbp-qv-link{ display:none; }
+.tbp-qv-loading{ padding:60px 24px; text-align:center; color:#777; }
+@media(max-width:640px){ .tbp-qv-modal{ max-width:calc(100vw - 32px); } .tbp-qv-grid{ padding:28px 22px 24px; } .tbp-qv-actions{ grid-template-columns:120px minmax(0,1fr); } }
+
+.tbp-toast{ position:fixed; right:20px; bottom:20px; z-index:1200; background:#222; color:#fff; padding:12px 16px; border-radius:8px; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.2); transform:translateY(20px); opacity:0; pointer-events:none; transition:.3s; }
+.tbp-toast.show{ transform:translateY(0); opacity:1; pointer-events:auto; }
+.tbp-toast a{ color:#ffd9a8; text-decoration:underline; margin-left:6px; }
+
+.tbp-action.tbp-whatsapp{ background:#25D366; border-color:#25D366; color:#fff; text-decoration:none; font-size:10.5px; gap:5px; line-height:1.2; }
+.tbp-action.tbp-whatsapp svg{ width:18px; height:18px; flex:0 0 18px; }
+.tbp-action.tbp-whatsapp:hover{ background:#1da851; border-color:#1da851; color:#fff; }
+.tbp-qv-add.tbp-qv-wa{ display:block; text-align:center; text-decoration:none; background:#25D366; }
+.tbp-qv-add.tbp-qv-wa:hover{ background:#1da851; }
+
+.tbp-loadmore-wrap{ text-align:center; margin-top:45px; }
+.tbp-loadprevious-wrap{ text-align:left; margin:0 0 22px; min-height:0; }
+.tbp-loadprevious-wrap,
+.tbp-loadprevious-wrap[hidden],
+.tbp-loadmore-wrap[hidden]{ display:none !important; }
+.tbp-loadmore{ display:inline-block; min-width:200px; padding:14px 40px; background:#fff; color:#222; border:1px solid #222; border-radius:6px; font-size:13px; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; transition:background .2s, color .2s; }
+.tbp-loadmore:hover{ background:#222; color:#fff; }
+.tbp-loadmore[disabled]{ opacity:.6; cursor:default; }
+
+@media(max-width:1024px){
+.tbp-products-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+}
+@media(max-width:767px){
+.tbp-search-page{ padding:30px 0; }
+.tbp-search-heading h1{ font-size:28px; }
+.tbp-toolbar{ flex-direction:row; align-items:flex-start; }
+.tbp-search-page .tbp-products-grid,
+.tbp-search-page .t4s-search-grid{ grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:16px !important; }
+.tbp-search-page .tbp-product-card{ min-width:0 !important; }
+.tbp-sort{ width:100%; }
+}
+</style>
+
+<script>
+window.TBP_SEARCH_CONFIG = {
+moneyFormat: {{ shop.money_format | json }},
+whatsappNumber: {{ section.settings.whatsapp_number | json }},
+shopUrl: {{ shop.url | json }},
+sort: {{ cur_sort | json }},
+shopDomain: {{ shop.permanent_domain | default: shop.domain | json }}
+};
+</script>
+<script src="{{ 'main-search.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+"name": "TBP Search Page",
+"target": "section",
+"settings": [
+{
+"type": "header",
+"content": "1. General options"
+},
+{
+"type": "text",
+"id": "whatsapp_number",
+"label": "WhatsApp number (for $0 / price-on-request products)",
+"info": "International format, digits only no +, spaces or dashes. e.g. 923001234567",
+"default": "923001234567"
+}
+]
+}
+{% endschema %}
+
