@@ -30,7 +30,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const API = "https://search-app-hcwsn.ondigitalocean.app/backend";
+const API = "https://search-app-hcwsn.ondigitalocean.app";
 
 // ─── Loader: all GET endpoints parallel ──────────────────────────────────────
 export const loader = async ({ request }) => {

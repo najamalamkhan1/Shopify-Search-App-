@@ -2,11 +2,14 @@ export async function apiFetch(
   endpoint,
   options = {}
 ) {
+  const baseUrl =
+    import.meta.env.VITE_API_URL ||
+    "https://search-app-hcwsn.ondigitalocean.app";
 
   const response =
     await fetch(
 
-      `${import.meta.env.VITE_API_URL}${endpoint}`,
+      `${baseUrl}${endpoint}`,
 
       {
         headers: {

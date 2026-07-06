@@ -22,7 +22,7 @@ import {RefreshIcon, SearchIcon, SettingsIcon, ViewIcon} from "@shopify/polaris-
 import {boundary} from "@shopify/shopify-app-react-router/server";
 import {authenticate} from "../shopify.server";
 
-const API = "https://search-app-hcwsn.ondigitalocean.app/backend";
+const API = "https://search-app-hcwsn.ondigitalocean.app";
 const SYNC_API = import.meta.env.VITE_API_URL || API;
 
 export const loader = async ({request}) => {
