@@ -2,7 +2,7 @@
 
 client_id = "c764fc1a2819d17de0fb9f9c368412af"
 name = "search app by tbp"
-application_url = "https://note-sorry-cartridge-bedding.trycloudflare.com"
+application_url = "https://search-app-hcwsn.ondigitalocean.app"
 embedded = true
 
 [build]
@@ -13,11 +13,11 @@ api_version = "2026-04"
 
   [[webhooks.subscriptions]]
   topics = [ "products/delete" ]
-  uri = "https://search-app-hcwsn.ondigitalocean.app/webhooks/products/delete"
+  uri = "/webhooks/products/delete"
 
   [[webhooks.subscriptions]]
   topics = [ "products/create" ]
-  uri = "https://search-app-hcwsn.ondigitalocean.app/webhooks/products/create"
+  uri = "/webhooks/products/create"
 
   [[webhooks.subscriptions]]
   topics = [ "app/scopes_update" ]
@@ -25,15 +25,15 @@ api_version = "2026-04"
 
   [[webhooks.subscriptions]]
   topics = [ "collections/update" ]
-  uri = "https://search-app-hcwsn.ondigitalocean.app/webhooks/collections/update"
+  uri = "/webhooks/collections/update"
 
   [[webhooks.subscriptions]]
   topics = [ "products/update" ]
-  uri = "https://search-app-hcwsn.ondigitalocean.app/webhooks/products/update"
+  uri = "/webhooks/products/update"
 
   [[webhooks.subscriptions]]
   topics = [ "collections/delete" ]
-  uri = "https://search-app-hcwsn.ondigitalocean.app/webhooks/collections/delete"
+  uri = "/webhooks/collections/delete"
 
   [[webhooks.subscriptions]]
   topics = [ "app/uninstalled" ]
@@ -41,21 +41,20 @@ api_version = "2026-04"
 
   [[webhooks.subscriptions]]
   topics = [ "collections/create" ]
-  uri = "https://search-app-hcwsn.ondigitalocean.app/webhooks/collections/create"
+  uri = "/webhooks/collections/create"
 
 [access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_content,read_products,write_metaobject_definitions,write_metaobjects,write_products"
 
 [auth]
 redirect_urls = [
-  "https://note-sorry-cartridge-bedding.trycloudflare.com/auth/callback",
-  "https://note-sorry-cartridge-bedding.trycloudflare.com/auth/shopify/callback",
-  "https://note-sorry-cartridge-bedding.trycloudflare.com/api/auth/callback"
+  "https://search-app-hcwsn.ondigitalocean.app/auth/callback",
+  "https://search-app-hcwsn.ondigitalocean.app/auth/shopify/callback",
+  "https://search-app-hcwsn.ondigitalocean.app/api/auth/callback"
 ]
 
 [app_proxy]
-url = "https://note-sorry-cartridge-bedding.trycloudflare.com/api"
+url = "https://search-app-hcwsn.ondigitalocean.app/api"
 subpath = "search-app"
 prefix = "apps"
 
