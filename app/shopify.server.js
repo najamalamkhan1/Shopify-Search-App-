@@ -51,7 +51,7 @@ const shopify = shopifyApp({
         try {
 
           await fetch(
-            "https://search-app-hcwsn.ondigitalocean.app/api/store/save",
+            "https://search-app-hcwsn.ondigitalocean.app/backend/api/store/save",
             {
               method: "POST",
 
